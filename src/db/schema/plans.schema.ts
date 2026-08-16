@@ -1,0 +1,13 @@
+import { pgTable, uuid, text, numeric, jsonb, timestamp } from 'drizzle-orm/pg-core';
+
+export const plans = pgTable('plans', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  monthlyPrice: numeric('monthly_price', { precision: 12, scale: 2 }).notNull(),
+  transactionFeePercent: numeric('transaction_fee_percent', { precision: 5, scale: 2 }).notNull(),
+  features: jsonb('features').$type<string[]>().notNull().default([]),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type Plan = typeof plans.$inferSelect;
+export type NewPlan = typeof plans.$inferInsert;
