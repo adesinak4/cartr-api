@@ -5,11 +5,17 @@ RUN corepack enable
 WORKDIR /app
 
 # ---- deps: install once, reused by both the build and runtime stages ----
-# Kept un-pruned (dev deps included) deliberately: `pnpm migrate` and
-# `pnpm seed:admin` (both ts-node scripts) need to be runnable directly
-# inside the deployed container via `docker exec` / a Coolify one-off
-# command — this is a small self-hosted app, not a project with a separate
-# CI pipeline that has its own access to the production database.
+# Kept un-pruned (dev deps included) deliberately: `pnpm migrate` (a ts-node
+# script) needs to be runnable directly inside the deployed container via
+# `docker exec` / a Coolify one-off command — this is a small self-hosted
+# app, not a project with a separate CI pipeline that has its own access to
+# the production database.
+#
+# The first admin account is NOT manual — AdminSeedService seeds it
+# automatically on every app boot (idempotent: skips if ADMIN_SEED_EMAIL
+# already exists), as long as ADMIN_SEED_EMAIL/ADMIN_SEED_PASSWORD are set
+# in the deploy environment. `pnpm seed:admin` still exists as a one-off
+# manual fallback (e.g. to seed a second admin with different credentials).
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile

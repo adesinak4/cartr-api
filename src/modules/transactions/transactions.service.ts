@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { TransactionsRepository } from './transactions.repository';
+import {
+  AdminTransactionListFilter,
+  AdminTransactionRow,
+  TransactionsRepository,
+} from './transactions.repository';
 import { NotFoundError } from '../../common/errors';
 import { NewTransaction, Transaction } from '../../db/schema';
 
@@ -9,6 +13,11 @@ export class TransactionsService {
 
   async list(): Promise<Transaction[]> {
     return this.transactionsRepository.findMany();
+  }
+
+  /** Admin-only — list across all merchants, joined with merchant identity. */
+  async adminList(filter: AdminTransactionListFilter): Promise<AdminTransactionRow[]> {
+    return this.transactionsRepository.listUnscoped(filter);
   }
 
   async getById(id: string): Promise<Transaction> {

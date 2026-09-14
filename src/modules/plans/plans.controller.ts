@@ -10,7 +10,10 @@ export class PlansController {
 
   @Get()
   async list() {
-    return this.plansService.list();
+    // Prices included — the onboarding wizard and dashboard plan picker both
+    // need period pricing, and prices aren't sensitive data. Archived plans
+    // excluded — see AdminPlansController for the unfiltered admin view.
+    return this.plansService.listPublicWithPrices();
   }
 
   @Get(':id')

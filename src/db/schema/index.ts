@@ -33,6 +33,9 @@ export * from './payment-methods.schema';
 export * from './subscription-charges.schema';
 export * from './signup-drafts.schema';
 export * from './domain-provisioning-tasks.schema';
+export * from './audit-logs.schema';
+export * from './disputes.schema';
+export * from './platform-settings.schema';
 
 export const merchantsRelations = relations(merchants, ({ many, one }) => ({
   users: many(users),

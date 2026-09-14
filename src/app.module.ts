@@ -6,6 +6,7 @@ import { DbModule } from './db/db.module';
 import { RedisModule } from './redis/redis.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { EventsModule } from './common/events/events.module';
+import { AuditModule } from './common/audit/audit.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseEnvelopeInterceptor } from './common/interceptors/response-envelope.interceptor';
 import { TenantContextInterceptor } from './common/tenant/tenant-context.interceptor';
@@ -33,6 +34,7 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
     ConfigModule,
     LoggerModule,
     EventsModule,
+    AuditModule,
     ScheduleModule.forRoot(),
     DbModule,
     RedisModule,

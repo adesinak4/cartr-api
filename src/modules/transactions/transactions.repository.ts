@@ -1,13 +1,60 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { DRIZZLE_CLIENT, DrizzleDb } from '../../db/db.module';
 import { TenantScopedRepository } from '../../common/tenant/tenant-scoped.repository';
-import { NewTransaction, orders, Transaction, transactions } from '../../db/schema';
+import { NewTransaction, orders, Transaction, transactions, merchants } from '../../db/schema';
+
+export interface AdminTransactionListFilter {
+  status?: Transaction['status'];
+  tenantId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AdminTransactionRow extends Transaction {
+  merchantSlug: string;
+  merchantStoreName: string;
+}
 
 @Injectable()
 export class TransactionsRepository extends TenantScopedRepository<Transaction, NewTransaction> {
   constructor(@Inject(DRIZZLE_CLIENT) db: DrizzleDb) {
     super(db, transactions);
+  }
+
+  /** Unscoped, joined with merchant identity — for the admin transactions list. */
+  async listUnscoped(filter: AdminTransactionListFilter = {}): Promise<AdminTransactionRow[]> {
+    const clauses = [
+      filter.status ? eq(transactions.status, filter.status) : undefined,
+      filter.tenantId ? eq(transactions.tenantId, filter.tenantId) : undefined,
+    ].filter((c): c is NonNullable<typeof c> => !!c);
+
+    return this.db
+      .select({
+        id: transactions.id,
+        orderId: transactions.orderId,
+        tenantId: transactions.tenantId,
+        provider: transactions.provider,
+        providerReference: transactions.providerReference,
+        amount: transactions.amount,
+        platformFee: transactions.platformFee,
+        merchantAmount: transactions.merchantAmount,
+        status: transactions.status,
+        flutterwaveTransactionId: transactions.flutterwaveTransactionId,
+        refundedAt: transactions.refundedAt,
+        refundReference: transactions.refundReference,
+        refundInitiatedBy: transactions.refundInitiatedBy,
+        createdAt: transactions.createdAt,
+        updatedAt: transactions.updatedAt,
+        merchantSlug: merchants.slug,
+        merchantStoreName: merchants.storeName,
+      })
+      .from(transactions)
+      .innerJoin(merchants, eq(transactions.tenantId, merchants.id))
+      .where(clauses.length ? and(...clauses) : undefined)
+      .orderBy(desc(transactions.createdAt))
+      .limit(filter.limit ?? 50)
+      .offset(filter.offset ?? 0);
   }
 
   /**

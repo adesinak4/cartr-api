@@ -1,11 +1,12 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { ForbiddenError } from '../errors';
+import { AppRole } from '../decorators/roles.decorator';
 
 export interface TenantStore {
   // null = platform admin context (no single tenant)
   tenantId: string | null;
   userId: string | null;
-  role: 'owner' | 'staff' | 'admin' | null;
+  role: AppRole | null;
 }
 
 /**

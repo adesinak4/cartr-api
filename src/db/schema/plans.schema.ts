@@ -6,6 +6,11 @@ export const plans = pgTable('plans', {
   monthlyPrice: numeric('monthly_price', { precision: 12, scale: 2 }).notNull(),
   transactionFeePercent: numeric('transaction_fee_percent', { precision: 5, scale: 2 }).notNull(),
   features: jsonb('features').$type<string[]>().notNull().default([]),
+  // Set = retired — excluded from public listing (signup wizard, dashboard
+  // plan picker) but left fully intact for merchants already on it and for
+  // admin to view/unarchive. Never hard-deleted — plan_prices and merchants
+  // both reference it.
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

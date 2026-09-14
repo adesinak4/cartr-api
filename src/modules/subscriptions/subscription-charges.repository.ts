@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { DRIZZLE_CLIENT, DrizzleDb } from '../../db/db.module';
 import { TenantScopedRepository } from '../../common/tenant/tenant-scoped.repository';
 import { TenantContext } from '../../common/tenant/tenant-context';
@@ -32,6 +32,15 @@ export class SubscriptionChargesRepository extends TenantScopedRepository<
       .where(eq(subscriptionCharges.providerReference, providerReference))
       .limit(1);
     return row ?? null;
+  }
+
+  /** Unscoped — admin's per-merchant billing history view. */
+  async findByTenantIdUnscoped(tenantId: string): Promise<SubscriptionCharge[]> {
+    return this.db
+      .select()
+      .from(subscriptionCharges)
+      .where(eq(subscriptionCharges.tenantId, tenantId))
+      .orderBy(desc(subscriptionCharges.createdAt));
   }
 
   /** `tenantId` optional — see PaymentMethodsRepository.findActive for the same convention. */

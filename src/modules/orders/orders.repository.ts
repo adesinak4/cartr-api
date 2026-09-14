@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, lt, sql } from 'drizzle-orm';
 import { DRIZZLE_CLIENT, DrizzleDb } from '../../db/db.module';
 import { TenantScopedRepository } from '../../common/tenant/tenant-scoped.repository';
 import { TenantContext } from '../../common/tenant/tenant-context';
@@ -12,10 +12,23 @@ import {
   orders,
   OrderItem,
   products,
+  merchants,
 } from '../../db/schema';
 
 export interface OrderWithItems extends Order {
   items: OrderItem[];
+}
+
+export interface AdminOrderListFilter {
+  status?: Order['status'];
+  tenantId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AdminOrderRow extends Order {
+  merchantSlug: string;
+  merchantStoreName: string;
 }
 
 @Injectable()
@@ -87,6 +100,49 @@ export class OrdersRepository extends TenantScopedRepository<Order, NewOrder> {
   async findByIdUnscoped(id: string): Promise<Order | null> {
     const [row] = await this.db.select().from(orders).where(eq(orders.id, id)).limit(1);
     return row ?? null;
+  }
+
+  /** Unscoped, joined with merchant identity — for the admin orders list. */
+  async listUnscoped(filter: AdminOrderListFilter = {}): Promise<AdminOrderRow[]> {
+    const clauses = [
+      filter.status ? eq(orders.status, filter.status) : undefined,
+      filter.tenantId ? eq(orders.tenantId, filter.tenantId) : undefined,
+    ].filter((c): c is NonNullable<typeof c> => !!c);
+
+    return this.db
+      .select({
+        id: orders.id,
+        tenantId: orders.tenantId,
+        customerId: orders.customerId,
+        status: orders.status,
+        subtotal: orders.subtotal,
+        deliveryFee: orders.deliveryFee,
+        total: orders.total,
+        currency: orders.currency,
+        deliveryStreet: orders.deliveryStreet,
+        deliveryCity: orders.deliveryCity,
+        deliveryState: orders.deliveryState,
+        note: orders.note,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+        merchantSlug: merchants.slug,
+        merchantStoreName: merchants.storeName,
+      })
+      .from(orders)
+      .innerJoin(merchants, eq(orders.tenantId, merchants.id))
+      .where(clauses.length ? and(...clauses) : undefined)
+      .orderBy(desc(orders.createdAt))
+      .limit(filter.limit ?? 50)
+      .offset(filter.offset ?? 0);
+  }
+
+  /** Unscoped, with items — for the admin order-detail view. */
+  async findByIdUnscopedWithItems(id: string): Promise<OrderWithItems | null> {
+    const order = await this.findByIdUnscoped(id);
+    if (!order) return null;
+
+    const items = await this.db.select().from(orderItems).where(eq(orderItems.orderId, id));
+    return { ...order, items };
   }
 
   /** Unscoped — the reservation-expiry task runs outside any tenant's request context. */

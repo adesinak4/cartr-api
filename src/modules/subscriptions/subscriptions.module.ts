@@ -18,6 +18,7 @@ import { FlutterwaveModule } from '../flutterwave/flutterwave.module';
     SubscriptionChargesRepository,
     RenewSubscriptionsTask,
   ],
-  exports: [SubscriptionsService],
+  // SubscriptionChargesRepository exported for admin's per-merchant billing history view.
+  exports: [SubscriptionsService, SubscriptionChargesRepository],
 })
 export class SubscriptionsModule {}

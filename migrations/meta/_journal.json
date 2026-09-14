@@ -36,6 +36,62 @@
       "when": 1786777175127,
       "tag": "0004_mushy_pete_wisdom",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789398374756,
+      "tag": "0005_lame_wallop",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789400954774,
+      "tag": "0006_exotic_scourge",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789401430135,
+      "tag": "0007_keen_solo",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789407110247,
+      "tag": "0008_cute_pyro",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789407406337,
+      "tag": "0009_perpetual_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789408394684,
+      "tag": "0010_purple_skullbuster",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789408599504,
+      "tag": "0011_lying_zeigeist",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789408949002,
+      "tag": "0012_slim_ben_urich",
+      "breakpoints": true
     }
   ]
 }

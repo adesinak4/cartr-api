@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OrdersRepository, OrderWithItems } from './orders.repository';
+import {
+  AdminOrderListFilter,
+  AdminOrderRow,
+  OrdersRepository,
+  OrderWithItems,
+} from './orders.repository';
 import { ProductsRepository } from '../products/products.repository';
 import { CustomersService } from '../customers/customers.service';
 import { PaymentAccountsService } from '../payment-accounts/payment-accounts.service';
@@ -204,6 +209,18 @@ export class OrdersService {
       orderId,
       order.items.map((item) => ({ productId: item.productId, qty: item.qty })),
     );
+  }
+
+  /** Admin-only — list across all merchants, joined with merchant identity. */
+  async adminList(filter: AdminOrderListFilter): Promise<AdminOrderRow[]> {
+    return this.ordersRepository.listUnscoped(filter);
+  }
+
+  /** Admin-only — single order with items, no tenant scoping. */
+  async adminGetById(id: string): Promise<OrderWithItems> {
+    const order = await this.ordersRepository.findByIdUnscopedWithItems(id);
+    if (!order) throw new NotFoundError('Order not found');
+    return order;
   }
 
   /**
