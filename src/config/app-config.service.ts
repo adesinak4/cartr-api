@@ -89,4 +89,8 @@ export class AppConfigService {
   get customDomainVerificationTimeoutDays(): number {
     return this.configService.get('CUSTOM_DOMAIN_VERIFICATION_TIMEOUT_DAYS', { infer: true });
   }
+
+  get googleClientId(): string | undefined {
+    return this.configService.get('GOOGLE_CLIENT_ID', { infer: true });
+  }
 }

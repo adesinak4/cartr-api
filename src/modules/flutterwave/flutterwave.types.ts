@@ -62,6 +62,11 @@ export interface FlutterwaveBank {
   name: string;
 }
 
+export interface ResolveAccountResult {
+  accountNumber: string;
+  accountName: string;
+}
+
 export interface FlutterwaveWebhookPayload {
   event: string;
   data: {

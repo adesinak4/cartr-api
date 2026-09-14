@@ -5,6 +5,7 @@ import { FlutterwaveService } from '../flutterwave/flutterwave.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { OrdersService } from '../orders/orders.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { OnboardingService } from '../onboarding/onboarding.service';
 import { verifyWebhookSignature } from '../flutterwave/flutterwave-webhook.util';
 import { FlutterwaveWebhookPayload } from '../flutterwave/flutterwave.types';
 import { TenantContext } from '../../common/tenant/tenant-context';
@@ -21,6 +22,7 @@ export class WebhooksService {
     private readonly transactionsService: TransactionsService,
     private readonly ordersService: OrdersService,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly onboardingService: OnboardingService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -54,6 +56,15 @@ export class WebhooksService {
       // no separate event type to branch on upfront.
       const handledAsSubscription = await this.subscriptionsService.handleChargeWebhook(payload);
       if (handledAsSubscription) {
+        return { status: 'confirmed' };
+      }
+
+      // Not a subscription renewal/upgrade charge either — check signup
+      // drafts before giving up. A brand-new merchant's very first payment
+      // has no transaction/subscription-charge row yet, since the merchant
+      // itself doesn't exist until this webhook confirms it.
+      const handledAsSignup = await this.onboardingService.handleChargeWebhook(payload);
+      if (handledAsSignup) {
         return { status: 'confirmed' };
       }
 

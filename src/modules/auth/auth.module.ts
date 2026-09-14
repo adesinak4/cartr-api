@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TokenService } from './token.service';
+import { GoogleAuthService } from './google-auth.service';
 import { RefreshTokenRepository } from './refresh-token.repository';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -18,6 +19,7 @@ import { UsersModule } from '../users/users.module';
   providers: [
     AuthService,
     TokenService,
+    GoogleAuthService,
     RefreshTokenRepository,
     LocalStrategy,
     JwtStrategy,
@@ -26,6 +28,6 @@ import { UsersModule } from '../users/users.module';
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
-  exports: [AuthService, TokenService],
+  exports: [AuthService, TokenService, GoogleAuthService],
 })
 export class AuthModule {}

@@ -3,8 +3,9 @@ import * as bcrypt from 'bcrypt';
 import { UsersRepository } from '../users/users.repository';
 import { RefreshTokenRepository } from './refresh-token.repository';
 import { TokenService } from './token.service';
-import { UnauthorizedError } from '../../common/errors';
+import { NotFoundError, UnauthorizedError } from '../../common/errors';
 import { User } from '../../db/schema';
+import { GoogleProfile } from './google-auth.service';
 
 export interface LoginResult {
   accessToken: string;
@@ -29,10 +30,45 @@ export class AuthService {
     const user = await this.usersRepository.findByEmail(email);
     if (!user || user.status !== 'active') return null;
 
+    // Google-only account — no password to check against.
+    if (!user.passwordHash) return null;
+
     const matches = await bcrypt.compare(password, user.passwordHash);
     if (!matches) return null;
 
     return user;
+  }
+
+  /**
+   * Login via a verified Google identity — never creates a new account
+   * (accounts are only ever created through the paid onboarding wizard, see
+   * the no-account-without-payment decision). Auto-links onto an existing
+   * password account with a matching, already-Google-verified email; a
+   * user with no account at all is told to sign up instead.
+   */
+  async loginWithGoogle(profile: GoogleProfile): Promise<LoginResult> {
+    let user = await this.usersRepository.findByGoogleId(profile.googleId);
+
+    if (!user) {
+      const existingByEmail = await this.usersRepository.findByEmail(profile.email);
+      if (!existingByEmail) {
+        throw new NotFoundError('No account found for this Google email — sign up first');
+      }
+      if (existingByEmail.status !== 'active') {
+        throw new UnauthorizedError('This account is not active');
+      }
+
+      user = await this.usersRepository.updateById(existingByEmail.id, {
+        googleId: profile.googleId,
+      });
+      if (!user) throw new NotFoundError('Account not found');
+    }
+
+    if (user.status !== 'active') {
+      throw new UnauthorizedError('This account is not active');
+    }
+
+    return this.login(user);
   }
 
   async login(user: User): Promise<LoginResult> {

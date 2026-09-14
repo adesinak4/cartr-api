@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AppConfigService } from '../../config/app-config.service';
-import { ServiceUnavailableError } from '../../common/errors';
+import { ServiceUnavailableError, ValidationError } from '../../common/errors';
 import {
   CreateSubaccountInput,
   CreateSubaccountResult,
@@ -8,6 +8,7 @@ import {
   InitializePaymentInput,
   InitializePaymentResult,
   RefundResult,
+  ResolveAccountResult,
   TokenizedChargeInput,
   TokenizedChargeResult,
   VerifyTransactionResult,
@@ -183,6 +184,32 @@ export class FlutterwaveService {
       refundId: String(data.id),
       status: data.status,
       amountRefunded: Number(data.amount_refunded),
+    };
+  }
+
+  /**
+   * Looks up the real account holder's name for a bank + account number
+   * combo before a payout account is saved — catches typos before real
+   * money starts routing to the wrong person. Flutterwave can return a 200
+   * with a non-"success" status body for an invalid/unresolvable account
+   * (not just a non-2xx HTTP status), so that's checked explicitly here
+   * rather than relying on `request()`'s HTTP-level error handling alone.
+   */
+  async resolveAccount(accountBank: string, accountNumber: string): Promise<ResolveAccountResult> {
+    const body = await this.request('/accounts/resolve', 'POST', {
+      account_bank: accountBank,
+      account_number: accountNumber,
+    });
+
+    if (body?.status !== 'success' || !body?.data?.account_name) {
+      throw new ValidationError(
+        body?.message ?? 'Could not resolve an account name for this bank and account number',
+      );
+    }
+
+    return {
+      accountNumber: body.data.account_number,
+      accountName: body.data.account_name,
     };
   }
 

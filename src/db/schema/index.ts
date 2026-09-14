@@ -8,6 +8,7 @@ import { orders } from './orders.schema';
 import { orderItems } from './order-items.schema';
 import { customers } from './customers.schema';
 import { plans } from './plans.schema';
+import { planPrices } from './plan-prices.schema';
 import { themes } from './themes.schema';
 import { paymentAccounts } from './payment-accounts.schema';
 import { transactions } from './transactions.schema';
@@ -24,11 +25,14 @@ export * from './orders.schema';
 export * from './order-items.schema';
 export * from './customers.schema';
 export * from './plans.schema';
+export * from './plan-prices.schema';
 export * from './themes.schema';
 export * from './payment-accounts.schema';
 export * from './transactions.schema';
 export * from './payment-methods.schema';
 export * from './subscription-charges.schema';
+export * from './signup-drafts.schema';
+export * from './domain-provisioning-tasks.schema';
 
 export const merchantsRelations = relations(merchants, ({ many, one }) => ({
   users: many(users),
@@ -85,6 +89,11 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
 
 export const plansRelations = relations(plans, ({ many }) => ({
   merchants: many(merchants),
+  prices: many(planPrices),
+}));
+
+export const planPricesRelations = relations(planPrices, ({ one }) => ({
+  plan: one(plans, { fields: [planPrices.planId], references: [plans.id] }),
 }));
 
 export const themesRelations = relations(themes, ({ many }) => ({

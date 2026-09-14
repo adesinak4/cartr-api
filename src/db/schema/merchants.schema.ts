@@ -38,6 +38,11 @@ export const merchants = pgTable(
     // Set on a plan change request; applied at the next successful renewal —
     // no proration, change takes effect next cycle only.
     pendingPlanId: uuid('pending_plan_id').references(() => plans.id),
+    // The commitment length (3/6/12) chosen at signup — determines both the
+    // lump-sum amount charged (via plan_prices) and the renewal cadence.
+    // Nullable for rows predating this column; SubscriptionsService falls
+    // back to the legacy monthly-price behavior when unset.
+    billingPeriodMonths: integer('billing_period_months'),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

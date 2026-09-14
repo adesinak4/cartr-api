@@ -25,6 +25,8 @@ import { AdminModule } from './modules/admin/admin.module';
 import { FlutterwaveModule } from './modules/flutterwave/flutterwave.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { DomainCheckModule } from './modules/domain-check/domain-check.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
 
 @Module({
   imports: [
@@ -49,6 +51,8 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
     FlutterwaveModule,
     WebhooksModule,
     SubscriptionsModule,
+    DomainCheckModule,
+    OnboardingModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },

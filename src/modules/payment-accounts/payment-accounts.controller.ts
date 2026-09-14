@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { PaymentAccountsService } from './payment-accounts.service';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
+import { ResolveAccountDto } from './dto/resolve-account.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 
 @Roles('owner')
@@ -22,5 +23,11 @@ export class PaymentAccountsController {
   @Post()
   async create(@Body() dto: CreatePaymentAccountDto) {
     return this.paymentAccountsService.create(dto);
+  }
+
+  /** Looks up the real account holder's name before the form is submitted — catches typos. */
+  @Get('resolve')
+  async resolve(@Query() query: ResolveAccountDto) {
+    return this.paymentAccountsService.resolveAccount(query.bankCode, query.accountNumber);
   }
 }

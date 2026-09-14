@@ -16,10 +16,39 @@ import { User, Merchant, NewMerchant } from '../../db/schema';
 import { UpdateMerchantDto } from './dto/update-merchant.dto';
 import { RegisterMerchantDto } from './dto/register-merchant.dto';
 import { AppConfigService } from '../../config/app-config.service';
+import { slugify } from '../../common/utils/slugify';
 
 const TRIAL_DAYS = 14;
 
 const PREMIUM_THEMES_FEATURE = 'premium_themes';
+
+// Slugs that must never be assigned to a merchant — the app itself lives at
+// app.{PLATFORM_DOMAIN}, and a merchant named e.g. "App" slugifying to "app"
+// would otherwise collide with the platform's own hostname reservation, plus
+// a handful of other names that would be confusing or hostile if squatted.
+const RESERVED_SLUGS = new Set([
+  'app',
+  'www',
+  'api',
+  'admin',
+  'mail',
+  'ftp',
+  'cartr',
+  'dashboard',
+  'login',
+  'signup',
+  'static',
+  'cdn',
+  'assets',
+  'blog',
+  'help',
+  'support',
+  'status',
+  'docs',
+  'staging',
+  'dev',
+  'test',
+]);
 
 interface PublicStorefront {
   slug: string;
@@ -81,25 +110,27 @@ export class MerchantsService {
     return this.authService.login(user);
   }
 
-  private slugify(input: string): string {
-    return (
-      input
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '') || 'store'
-    );
+  private async generateUniqueSlug(storeName: string): Promise<string> {
+    return this.ensureUniqueSlug(slugify(storeName));
   }
 
-  private async generateUniqueSlug(storeName: string): Promise<string> {
-    const base = this.slugify(storeName);
+  /**
+   * Public — the onboarding wizard's domain-derived slug (the domain's own
+   * second-level label, not re-slugified from the business name) goes
+   * through the same reserved-word + collision guarantee as the legacy
+   * register() path, via this shared entry point.
+   */
+  async ensureUniqueSlug(base: string): Promise<string> {
     let candidate = base;
     let suffix = 1;
 
     // The unique index on merchants.slug is the real guarantee under
     // concurrency; this just avoids the common case of an obviously
-    // colliding slug on the happy path.
-    while (await this.merchantsRepository.findBySlug(candidate)) {
+    // colliding or reserved slug on the happy path.
+    while (
+      RESERVED_SLUGS.has(candidate) ||
+      (await this.merchantsRepository.findBySlug(candidate))
+    ) {
       suffix += 1;
       candidate = `${base}-${suffix}`;
     }

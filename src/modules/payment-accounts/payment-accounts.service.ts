@@ -41,6 +41,10 @@ export class PaymentAccountsService {
     return this.flutterwaveService.listBanks();
   }
 
+  async resolveAccount(bankCode: string, accountNumber: string) {
+    return this.flutterwaveService.resolveAccount(bankCode, accountNumber);
+  }
+
   /**
    * Registers the merchant's payout destination — creates a real Flutterwave
    * subaccount and stores its id. No local row is written if the Flutterwave

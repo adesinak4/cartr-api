@@ -32,6 +32,12 @@ export const envSchema = z.object({
   // domain before giving up (an on-demand check always still works past this).
   CUSTOM_DOMAIN_VERIFICATION_TIMEOUT_DAYS: z.coerce.number().int().min(1).default(7),
 
+  // Verifies the audience claim on Google ID tokens sent from the frontend's
+  // "Continue with Google" button — see GoogleAuthService. Optional so local
+  // dev/test can run without Google OAuth configured; the feature is simply
+  // unavailable (a clear error) until this is set.
+  GOOGLE_CLIENT_ID: z.string().optional(),
+
   ADMIN_SEED_EMAIL: z.string().email().optional(),
   ADMIN_SEED_PASSWORD: z.string().min(8).optional(),
 

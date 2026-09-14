@@ -15,7 +15,7 @@ import {
   FlutterwaveWebhookPayload,
   VerifyTransactionResult,
 } from '../flutterwave/flutterwave.types';
-import { Merchant, NewMerchant, SubscriptionCharge } from '../../db/schema';
+import { Merchant, NewMerchant, Plan, SubscriptionCharge } from '../../db/schema';
 
 function addMonths(date: Date, months: number): Date {
   const result = new Date(date);
@@ -79,6 +79,7 @@ export class SubscriptionsService {
     const owner = await this.usersRepository.findOwnerByTenantId(merchant.id);
     if (!owner) throw new NotFoundError('Store owner account not found');
 
+    const { amount, periodMonths } = await this.resolveCharge(merchant, plan);
     const now = new Date();
     const txRef = crypto.randomUUID();
 
@@ -86,17 +87,17 @@ export class SubscriptionsService {
       planId: plan.id,
       provider: 'flutterwave',
       providerReference: txRef,
-      amount: plan.monthlyPrice,
+      amount,
       currency: 'NGN',
       status: 'pending',
       attemptNumber: 1,
       billingPeriodStart: now,
-      billingPeriodEnd: addMonths(now, 1),
+      billingPeriodEnd: addMonths(now, periodMonths),
     });
 
     const { paymentLink } = await this.flutterwaveService.initializePayment({
       txRef,
-      amount: plan.monthlyPrice,
+      amount,
       currency: 'NGN',
       redirectUrl,
       customer: { name: owner.name, email: owner.email, phonenumber: '' },
@@ -104,6 +105,23 @@ export class SubscriptionsService {
     });
 
     return { paymentLink };
+  }
+
+  /**
+   * Lump-sum amount + renewal cadence for a merchant's chosen commitment
+   * length. Falls back to the legacy flat monthly price/cadence for
+   * merchants created before period-based billing existed
+   * (billingPeriodMonths unset) — never silently guesses a period price.
+   */
+  private async resolveCharge(
+    merchant: Merchant,
+    plan: Plan,
+  ): Promise<{ amount: string; periodMonths: number }> {
+    if (merchant.billingPeriodMonths) {
+      const price = await this.plansService.getPrice(plan.id, merchant.billingPeriodMonths);
+      return { amount: price.totalPrice, periodMonths: merchant.billingPeriodMonths };
+    }
+    return { amount: plan.monthlyPrice, periodMonths: 1 };
   }
 
   async changePlan(planId: string): Promise<void> {
@@ -196,6 +214,7 @@ export class SubscriptionsService {
       return false;
     }
 
+    const { amount, periodMonths } = await this.resolveCharge(merchant, plan);
     const txRef = crypto.randomUUID();
     const attemptNumber = merchant.billingRetryCount + 1;
 
@@ -204,12 +223,12 @@ export class SubscriptionsService {
         planId: plan.id,
         provider: 'flutterwave',
         providerReference: txRef,
-        amount: plan.monthlyPrice,
+        amount,
         currency: 'NGN',
         status: 'pending',
         attemptNumber,
         billingPeriodStart: now,
-        billingPeriodEnd: addMonths(now, 1),
+        billingPeriodEnd: addMonths(now, periodMonths),
         paymentMethodId: paymentMethod.id,
       },
       merchant.id,
@@ -217,7 +236,7 @@ export class SubscriptionsService {
 
     const result = await this.flutterwaveService.tokenizedCharge({
       token: paymentMethod.providerCardToken,
-      amount: plan.monthlyPrice,
+      amount,
       currency: 'NGN',
       email: owner.email,
       txRef,
@@ -273,12 +292,14 @@ export class SubscriptionsService {
       );
     }
 
+    const periodMonths = merchant.billingPeriodMonths ?? 1; // legacy fallback, see resolveCharge
+
     const merchantUpdate: Partial<NewMerchant> = {
       subscriptionStatus: 'active',
       pastDueSince: null,
       billingRetryCount: 0,
-      currentPeriodEnd: addMonths(now, 1),
-      nextRenewalAt: addMonths(now, 1),
+      currentPeriodEnd: addMonths(now, periodMonths),
+      nextRenewalAt: addMonths(now, periodMonths),
     };
     if (merchant.pendingPlanId) {
       merchantUpdate.planId = merchant.pendingPlanId;
